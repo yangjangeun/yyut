@@ -4,7 +4,6 @@ from youtube_transcript_api.formatters import TextFormatter
 import re
 
 def extract_video_id(url):
-    # YouTube URL에서 video ID 추출
     video_id = None
     if 'youtube.com' in url:
         video_id = re.search(r'v=([^&]+)', url)
@@ -35,8 +34,7 @@ def get_subtitles(video_id, language_code):
     except Exception as e:
         return None, f"자막을 가져오는 중 오류가 발생했습니다: {str(e)}"
 
-# Streamlit UI
-st.title("YouTube 자막 추출")
+st.title("YouTube 자막 추출기")
 st.write("YouTube 동영상 URL을 입력하면 자막을 추출해드립니다.")
 
 # URL 입력 및 언어 불러오기 버튼을 한 줄에 배치
@@ -46,7 +44,11 @@ with col1:
 with col2:
     fetch_lang = st.button("언어 불러오기", key="fetch_lang_btn")
 
-# 세션 상태에 언어 목록 저장
+# 디버깅용 로그
+st.write("DEBUG: 입력된 URL:", url)
+st.write("DEBUG: fetch_lang 버튼 클릭 여부:", fetch_lang)
+
+# 세션 상태 초기화
 if 'languages' not in st.session_state:
     st.session_state['languages'] = []
 if 'video_id' not in st.session_state:
@@ -55,13 +57,16 @@ if 'lang_error' not in st.session_state:
     st.session_state['lang_error'] = ''
 
 if fetch_lang:
+    st.write("DEBUG: fetch_lang 버튼이 눌렸습니다.")
     st.session_state['languages'] = []
     st.session_state['video_id'] = None
     st.session_state['lang_error'] = ''
     if url:
         video_id = extract_video_id(url)
+        st.write("DEBUG: 추출된 video_id:", video_id)
         if video_id:
             langs = get_available_languages(video_id)
+            st.write("DEBUG: get_available_languages 결과:", langs)
             if isinstance(langs, str):
                 st.session_state['lang_error'] = langs
             elif langs:
@@ -78,8 +83,16 @@ languages = st.session_state.get('languages', [])
 video_id = st.session_state.get('video_id', None)
 lang_error = st.session_state.get('lang_error', '')
 
+st.write("DEBUG: video_id:", video_id)
+st.write("DEBUG: languages:", languages)
+st.write("DEBUG: lang_error:", lang_error)
+
 if lang_error:
-    st.error(lang_error)
+    # 자주 나오는 에러 메시지 한글화
+    if 'Subtitles are disabled' in lang_error:
+        st.error('이 영상에는 자막이 제공되지 않습니다.')
+    else:
+        st.error(lang_error)
 
 if languages:
     language_options = {f"{lang[1]} ({lang[0]})": lang[0] for lang in languages}
@@ -89,8 +102,11 @@ if languages:
         key="lang_select"
     )
     if st.button("자막 추출", key="extract_btn"):
+        st.write("DEBUG: 자막 추출 버튼 클릭됨")
         with st.spinner("자막을 추출하는 중..."):
             subtitles, err = get_subtitles(video_id, language_options[selected_language])
+            st.write("DEBUG: subtitles:", subtitles)
+            st.write("DEBUG: err:", err)
             if subtitles:
                 st.text_area("추출된 자막:", subtitles, height=400)
                 st.download_button(
@@ -102,4 +118,4 @@ if languages:
             else:
                 st.error(err or "해당 언어로 자막을 추출할 수 없습니다.")
 else:
-    st.info("URL을 입력하고 '언어 불러오기' 버튼을 눌러 자막 언어를 확인하세요.") 
+    st.info("URL을 입력하고 '언어 불러오기' 버튼을 눌러 자막 언어를 확인하세요.")
