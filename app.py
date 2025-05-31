@@ -40,6 +40,13 @@ st.set_page_config(
     layout="wide"
 )
 
+# 안내 메시지 (자동 생성 자막 한계)
+st.info(
+    "⚠️ 일부 자동 생성 자막은 유튜브 정책에 따라 추출이 불가능할 수 있습니다. "
+    "웹에서 자막이 보이더라도, 프로그램에서는 추출이 안 될 수 있습니다. "
+    "자막이 꼭 필요한 경우, 여러 영상으로 시도해보세요."
+)
+
 # 사이드바에 새로고침 버튼
 st.sidebar.markdown("---")
 st.sidebar.info("앱이 멈췄거나 이상하다면 새로고침 해보세요.")
@@ -96,7 +103,7 @@ if lang_error:
 
 if languages:
     st.markdown("---")
-    language_options = {f"{lang[1]} ({lang[0]})": lang[0] for lang in languages}
+    language_options = {f"{lang[1]} ({'자동 생성' if lang[2] else '수동'}) [{lang[0]}]": lang[0] for lang in languages}
     selected_language = st.selectbox(
         "자막 언어를 선택하세요:",
         options=list(language_options.keys()),
@@ -117,7 +124,11 @@ if languages:
                         use_container_width=True
                     )
                 else:
-                    st.error(err or "해당 언어로 자막을 추출할 수 없습니다.")
+                    # 자동 생성 자막 추출 실패시 친절한 안내
+                    if err and 'no element found' in err:
+                        st.error("이 영상의 자동 생성 자막은 유튜브 정책상 추출이 불가능합니다. 다른 영상으로 시도해보세요.")
+                    else:
+                        st.error(err or "해당 언어로 자막을 추출할 수 없습니다.")
 else:
     st.info("URL을 입력하고 '확인' 버튼을 눌러 자막 언어를 확인하세요.")
 
